@@ -74,6 +74,7 @@ int main( void )
 	glDepthFunc(GL_LESS); 
 
 	// Cull triangles which normal is not towards the camera
+    //glFrontFace(GL_CW);
 	glEnable(GL_CULL_FACE);
 
 	GLuint VertexArrayID;
@@ -89,16 +90,24 @@ int main( void )
 	GLuint ModelMatrixID = glGetUniformLocation(programID, "M");
 
 	// Load the texture
-	GLuint Texture = loadDDS("uvmap.DDS");
+	//GLuint Texture = loadDDS("uvmap.DDS");
+    //GLuint diffuseTexture = loadDDS("Rock_9_Tex\\diffuse.dds");
+    //GLuint diffuseTexture = loadDDS("cube-diffuse.dds");
+    GLuint diffuseTexture = loadBMP_custom("test-diffuse.bmp");
+    //GLuint specularTexture = loadDDS("cube-specular.dds");
+    GLuint specularTexture = loadBMP_custom("test-specular.bmp");
 	
 	// Get a handle for our "myTextureSampler" uniform
-	GLuint TextureID  = glGetUniformLocation(programID, "myTextureSampler");
+	//GLuint TextureID  = glGetUniformLocation(programID, "myTextureSampler");
+    GLuint diffuseTextureID = glGetUniformLocation(programID, "diffuseSampler");
+    GLuint specularTextureID = glGetUniformLocation(programID, "specularSampler");
 
 	// Read our .obj file
 	std::vector<glm::vec3> vertices;
 	std::vector<glm::vec2> uvs;
 	std::vector<glm::vec3> normals;
-	bool res = loadOBJ("suzanne.obj", vertices, uvs, normals);
+	//bool res = loadOBJ("suzanne.obj", vertices, uvs, normals);
+	bool res = loadOBJ("cube.obj", vertices, uvs, normals);
 
 	// Load it into a VBO
 
@@ -133,7 +142,7 @@ int main( void )
 		computeMatricesFromInputs();
 		glm::mat4 ProjectionMatrix = getProjectionMatrix();
 		glm::mat4 ViewMatrix = getViewMatrix();
-		glm::mat4 ModelMatrix = glm::mat4(1.0);
+		glm::mat4 ModelMatrix = glm::translate(glm::scale(glm::mat4(20.0), glm::vec3(0.2f, 0.2f, 0.2f)), glm::vec3(0.f, -1.f, 20.0f));
 		glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
 
 		// Send our transformation to the currently bound shader, 
@@ -147,9 +156,15 @@ int main( void )
 
 		// Bind our texture in Texture Unit 0
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, Texture);
+		//glBindTexture(GL_TEXTURE_2D, Texture);
+		glBindTexture(GL_TEXTURE_2D, diffuseTexture);
 		// Set our "myTextureSampler" sampler to use Texture Unit 0
-		glUniform1i(TextureID, 0);
+		//glUniform1i(TextureID, 0);
+		glUniform1i(diffuseTextureID, 0);
+
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, specularTexture);
+        glUniform1i(specularTextureID, 1);
 
 		// 1rst attribute buffer : vertices
 		glEnableVertexAttribArray(0);
@@ -207,7 +222,9 @@ int main( void )
 	glDeleteBuffers(1, &uvbuffer);
 	glDeleteBuffers(1, &normalbuffer);
 	glDeleteProgram(programID);
-	glDeleteTextures(1, &Texture);
+	//glDeleteTextures(1, &Texture);
+	glDeleteTextures(1, &diffuseTexture);
+    glDeleteTextures(1, &specularTexture);
 	glDeleteVertexArrays(1, &VertexArrayID);
 
 	// Close OpenGL window and terminate GLFW

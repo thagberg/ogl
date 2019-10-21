@@ -11,7 +11,9 @@ in vec3 LightDirection_cameraspace;
 out vec3 color;
 
 // Values that stay constant for the whole mesh.
-uniform sampler2D myTextureSampler;
+//uniform sampler2D myTextureSampler;
+uniform sampler2D diffuseSampler;
+uniform sampler2D specularSampler;
 uniform mat4 MV;
 uniform vec3 LightPosition_worldspace;
 
@@ -20,10 +22,10 @@ void main(){
 	// Light emission properties
 	// You probably want to put them as uniforms
 	vec3 LightColor = vec3(1,1,1);
-	float LightPower = 50.0f;
+	float LightPower = 1.0f;
 	
 	// Material properties
-	vec3 MaterialDiffuseColor = texture( myTextureSampler, UV ).rgb;
+	vec3 MaterialDiffuseColor = texture( diffuseSampler, UV ).rgb;
 	vec3 MaterialAmbientColor = vec3(0.1,0.1,0.1) * MaterialDiffuseColor;
 	vec3 MaterialSpecularColor = vec3(0.3,0.3,0.3);
 
@@ -43,6 +45,7 @@ void main(){
 	
 	// Eye vector (towards the camera)
 	vec3 E = normalize(EyeDirection_cameraspace);
+    vec3 h = normalize(-l + E);
 	// Direction in which the triangle reflects the light
 	vec3 R = reflect(-l,n);
 	// Cosine of the angle between the Eye vector and the Reflect vector,
@@ -50,13 +53,9 @@ void main(){
 	//  - Looking into the reflection -> 1
 	//  - Looking elsewhere -> < 1
 	float cosAlpha = clamp( dot( E,R ), 0,1 );
-	
-	color = 
-		// Ambient : simulates indirect lighting
-		MaterialAmbientColor +
-		// Diffuse : "color" of the object
-		MaterialDiffuseColor * LightColor * LightPower * cosTheta / (distance*distance) +
-		// Specular : reflective highlight, like a mirror
-		MaterialSpecularColor * LightColor * LightPower * pow(cosAlpha,5) / (distance*distance);
 
+    float specularStrength = LightPower * pow(max(dot(E, R), 0), 32);
+    vec3 specularColor = specularStrength * texture(specularSampler, UV).rgb;
+    vec3 diffuseColor = LightColor * LightPower * max(dot(n, l), 0) * MaterialDiffuseColor;
+    color = MaterialAmbientColor + diffuseColor + specularColor;
 }
